@@ -1,0 +1,30 @@
+name: Test new release
+
+on: [release, workflow_dispatch]
+
+jobs:
+  verify-gpg-signature:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Install CLI
+      shell: bash
+      run: curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sudo sh -s -- --debug --verify-signature
+    - name: Test CLI
+      run: doppler --version
+  verify-scoop:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Install Scoop and CLI
+      run: |
+        iex "& {$(irm get.scoop.sh)} -RunAsAdmin"
+        scoop bucket add doppler https://github.com/DopplerHQ/scoop-doppler.git
+        scoop install doppler
+        doppler --version

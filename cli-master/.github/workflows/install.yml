@@ -1,0 +1,167 @@
+name: Test install.sh
+
+on: [push]
+
+jobs:
+  ubuntu-bash:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Install CLI
+      shell: bash
+      run: sudo ./scripts/install.sh --debug
+    - name: Test CLI
+      run: doppler --version
+  ubuntu-sh:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Uninstall bash
+      run: sudo apt-get remove -y --allow-remove-essential bash
+    - name: Verify bash has been removed
+      run: |
+        result=$(which bash) || true;
+        if [ -n "$result" ]; then
+          exit 1;
+        fi;
+    - name: Install CLI
+      shell: sh
+      run: sudo ./scripts/install.sh --debug
+    - name: Test CLI
+      run: doppler --version
+  ubuntu-wget:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Uninstall curl
+      run: sudo apt-get remove -y curl
+    - name: Verify curl has been removed
+      run: |
+        result=$(which curl) || true;
+        if [ -n "$result" ]; then
+          exit 1;
+        fi;
+    - name: Install CLI
+      run: sudo ./scripts/install.sh --debug
+    - name: Test CLI
+      run: doppler --version
+  ubuntu-no-gpg-fail:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Uninstall gnupg
+      run: |
+        sudo apt-get remove -y gnupg;
+        sudo mv /usr/bin/gpg /usr/bin/gpg.old
+    - name: Verify gnupg has been removed
+      run: |
+        result=$(which gpg) || true;
+        if [ -n "$result" ]; then
+          exit 1;
+        fi;
+    - name: Install CLI
+      continue-on-error: true
+      run: sudo ./scripts/install.sh --debug
+    - name: Verify install failed
+      if: ${{ always() }}
+      run: |
+        result=$(which doppler) || true;
+        if [ -n "$result" ]; then
+          exit 1;
+        fi;
+  ubuntu-no-package-manager:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Install CLI
+      run: sudo ./scripts/install.sh --debug --no-package-manager
+    - name: Test CLI
+      run: doppler --version
+  ubuntu-no-install:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Download CLI
+      run: sudo ./scripts/install.sh --debug --no-install
+    - name: Verify file existence
+      run: ls -l ./doppler-download.deb
+  ubuntu-no-install-no-package-manager:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Download CLI
+      run: sudo ./scripts/install.sh --debug --no-install --no-package-manager
+    - name: Verify file existence
+      run: ls -l ./doppler
+  ubuntu-custom-install-path:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Make temp directory
+      run: mkdir ./tmp
+    - name: Install CLI
+      run: sudo ./scripts/install.sh --debug --no-package-manager --install-path ./tmp
+    - name: Test CLI
+      run: ./tmp/doppler --version
+  macOS:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Install CLI
+      run: ./scripts/install.sh --debug
+    - name: Test CLI
+      run: doppler --version
+  macOS-no-install:
+    runs-on: macos-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Install CLI
+      run: ./scripts/install.sh --debug --no-install
+    - name: Verify file existence
+      run: ls -l ./doppler
+  windows:
+    runs-on: windows-latest
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v1
+      with:
+        path: ./src/github.com/${{ github.repository }}
+    - name: Create user bin directory
+      shell: bash
+      run: mkdir -p $HOME/bin
+    - name: Install CLI
+      shell: bash
+      run: ./scripts/install.sh --debug --install-path $HOME/bin
+    - name: Test CLI
+      shell: bash
+      run: doppler --version
